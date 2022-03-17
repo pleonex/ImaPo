@@ -119,7 +119,7 @@ jobs:
         run: wget -qO- https://aka.ms/install-artifacts-credprovider.sh | bash
 
       - name: "Publish artifacts"
-        run: dotnet cake --target=Push-Artifacts --verbosity=diagnostic
+        run: dotnet cake --target=Push-ArtifactsWithoutNuGets --verbosity=diagnostic
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
           STABLE_NUGET_FEED_TOKEN: ${{ secrets.STABLE_NUGET_FEED_TOKEN }}
