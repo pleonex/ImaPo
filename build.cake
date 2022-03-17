@@ -1,17 +1,15 @@
-// Remember to fix a version with "&version=x.y.z"
-#load "nuget:?package=PleOps.Cake&prerelease"
+#load "nuget:?package=PleOps.Cake&version=0.7.0"
 
 Task("Define-Project")
     .Description("Fill specific project information")
     .Does<BuildInfo>(info =>
 {
-    info.AddLibraryProjects("MyLibrary");
-    info.AddApplicationProjects("src/MyConsole/MyConsole.csproj");
-    info.AddTestProjects("MyTests");
+    info.AddApplicationProjects("ImaPo.Gtk");
+    // info.AddTestProjects("ImaPo.Tests");
 
     // No need to set if you want to use nuget.org
-    info.PreviewNuGetFeed = "https://pkgs.dev.azure.com/benito356/NetDevOpsTest/_packaging/Example-Preview/nuget/v3/index.json";
-    info.StableNuGetFeed = "https://pkgs.dev.azure.com/benito356/NetDevOpsTest/_packaging/Example-Preview/nuget/v3/index.json";
+    info.PreviewNuGetFeed = "https://pkgs.dev.azure.com/SceneGate/SceneGate/_packaging/SceneGate-Preview/nuget/v3/index.json";
+    info.StableNuGetFeed = "https://pkgs.dev.azure.com/SceneGate/SceneGate/_packaging/SceneGate-Preview/nuget/v3/index.json";
 });
 
 Task("Default")

@@ -4,8 +4,8 @@
 - name: Guides
   href: guides/
 
-- name: API
-  href: dev/
+- name: Chagelog
+  href: dev/Changelog.md
 
 - name: GitHub
-  href: https://github.com/pleonex/csharp-template
+  href: https://github.com/pleonex/ImaPo

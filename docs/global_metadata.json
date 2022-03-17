@@ -1,13 +1,11 @@
 {
-    "_appTitle": "PleOps.Cake project template",
-    "_appFooter": "Copyright (c) 2019 Benito Palacios Sánchez",
-    "_appLogoPath": "images/logo_48.png",
-    "_appFaviconPath": "images/favicon.png",
+    "_appTitle": "ImaPo",
+    "_appFooter": "Copyright (c) 2022 Benito Palacios Sánchez",
     "_enableSearch": true,
     "_enableNewTab": true,
     "_gitContribute": {
         "apiSpecFolder": "docs/apidoc",
-        "repo": "https://github.com/pleonex/template-csharp",
+        "repo": "https://github.com/pleonex/ImaPo",
         "branch": "main"
     }
 }

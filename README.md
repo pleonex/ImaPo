@@ -1,26 +1,25 @@
-# .NET Project template [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://choosealicense.com/licenses/mit/) ![Build and release](https://github.com/pleonex/template-csharp/workflows/Build%20and%20release/badge.svg)
+# ImaPo [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://choosealicense.com/licenses/mit/) ![Build and release](https://github.com/pleonex/imapo/workflows/Build%20and%20release/badge.svg)
 
-This is a template repository for .NET projects. It uses the build system and
-DevOps pipeline [PleOps.Cake](https://github.com/pleonex/PleOps.Cake).
+Tool to help to translate images via PO files in Weblate.
 
 <!-- prettier-ignore -->
-| Release | Package                                                           |
-| ------- | ----------------------------------------------------------------- |
-| Stable  | [![Azure Artifacts](https://feeds.dev.azure.com/benito356/339c91a8-9d6c-4082-8b1a-93c2ae76b637/_apis/public/Packaging/Feeds/e3acf8ba-ec70-46f0-b1a5-da1ce3dd5d9f/Packages/b8696a32-e71a-4479-9b0e-002997b8d8ef/Badge)](https://dev.azure.com/benito356/NetDevOpsTest/_packaging?_a=package&feed=e3acf8ba-ec70-46f0-b1a5-da1ce3dd5d9f&package=b8696a32-e71a-4479-9b0e-002997b8d8ef&preferRelease=true) |
-| Preview | [Azure Artifacts](https://dev.azure.com/SceneGate/SceneGate/_packaging?_a=feed&feed=SceneGate-Preview) |
+| Release | Package                                                                                                                                                         |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Stable  | ![GitHub commits since latest release (by SemVer)](https://img.shields.io/github/commits-since/pleonex/ImaPo/latest)                                            |
+| Preview | ![GitHub commits since latest release (by SemVer including pre-releases)](https://img.shields.io/github/commits-since/pleonex/ImaPo/latest?include_prereleases) |
 
-## Setup
+## Installation
 
-Follow the
-[checklist in PleOps.Cake](https://github.com/pleonex/PleOps.Cake/blob/develop/docs/guides/Project%20setup.md)
-to adapt this template to your project.
+In progress...
+
+## Usage
+
+In progress...
 
 ## Documentation
 
 Feel free to ask any question in the
-[project Discussion site!](https://github.com/pleonex/template-csharp/discussions)
-
-Check our on-line [documentation](https://www.pleonex.dev/PleOps.Cake/).
+[project Discussion site!](https://github.com/pleonex/imapo/discussions)
 
 ## Build
 

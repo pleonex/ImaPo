@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020 Benito Palacios Sánchez
+﻿// Copyright (c) 2022 Benito Palacios Sánchez
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 using System;
+using System.IO;
+using Eto.Drawing;
+using Eto.Forms;
+using Eto.GtkSharp.Forms.Controls;
+using ImaPo.UI.Main;
 
-namespace MyConsole
+namespace ImaPo.Gtk
 {
     /// <summary>
     /// Main program class.
@@ -32,11 +37,18 @@ namespace MyConsole
         /// <param name="args">Application arguments.</param>
         public static void Main(string[] args)
         {
-            string consoleVersion = typeof(Program).Assembly.GetName().Version.ToString();
-            Console.WriteLine($"Console version: {consoleVersion}");
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                string gtkLibs = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin");
 
-            string libVersion = MyLibrary.LibVersion.GetVersion();
-            Console.WriteLine($"Library version: {libVersion}");
+                string path = Environment.GetEnvironmentVariable("Path");
+                Environment.SetEnvironmentVariable("Path", $"{gtkLibs};{path}");
+            }
+
+            Eto.Style.Add<TreeGridViewHandler>(
+                "analyze-tree",
+                handler => handler.Font = new Font("Ubuntu Nerd Font", 10));
+
+            new Application(Eto.Platforms.Gtk).Run(new MainWindow());
         }
     }
 }

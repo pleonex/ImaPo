@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../MyLibrary/MyLibrary.csproj" />
+    <ProjectReference Include="..\ImaPo.UI\ImaPo.UI.csproj" />
 
     <PackageReference Include="nunit" />
     <PackageReference Include="NUnit3TestAdapter" />

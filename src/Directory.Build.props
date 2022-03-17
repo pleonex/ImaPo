@@ -1,9 +1,9 @@
 <Project>
     <PropertyGroup>
-        <Product>PleOps</Product>
+        <Product>ImaPo</Product>
         <Authors>pleonex</Authors>
         <Company>None</Company>
-        <Copyright>Copyright (C) 2020 Benito Palacios Sánchez</Copyright>
+        <Copyright>Copyright (C) 2022 Benito Palacios Sánchez</Copyright>
 
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
@@ -15,10 +15,10 @@
 
     <PropertyGroup>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/pleonex/template-csharp</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/pleonex/template-csharp</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/pleonex/ImaPo</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/pleonex/ImaPo</RepositoryUrl>
         <PackageIcon>icon.png</PackageIcon>
-        <PackageTags>net;csharp;devops;pipeline;github</PackageTags>
+        <PackageTags>localization;po</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
