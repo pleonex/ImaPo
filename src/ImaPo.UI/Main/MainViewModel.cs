@@ -30,6 +30,7 @@ public sealed class MainViewModel : ObservableObject
         OpenProjectCommand = new RelayCommand(OpenProject);
         NewProjectCommand = new RelayCommand(NewProject);
         OpenImageCommand = new RelayCommand(OpenImage);
+        SelectNextNodeCommand = new RelayCommand(SelectNextNode);
 
         var dummyProject = new ProjectManager(new ProjectSettings());
         RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), dummyProject);
@@ -47,7 +48,9 @@ public sealed class MainViewModel : ObservableObject
 
     public ICommand OpenImageCommand { get; }
 
-    public TreeGridNode SelectedNode {
+    public ICommand SelectNextNodeCommand { get; }
+
+    public TreeGridNode? SelectedNode {
         get => selectedNode;
         set => SetProperty(ref selectedNode, value);
     }
@@ -104,15 +107,41 @@ public sealed class MainViewModel : ObservableObject
         RootNode.Node.Dispose();
         RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
         RootNode.Add(NodeFactory.FromDirectory(imagePath, "*.png", "Images", subDirectories: true));
-        RootNode.Add(NodeFactory.FromDirectory(textPath, "*.po*", "Texts", subDirectories: true));
 
 #pragma warning disable S4220 // pending good refactor
         OnNodeUpdate?.Invoke(this, null);
 #pragma warning restore S4220
     }
 
+    public void SelectNextNode()
+    {
+        TreeGridNode? selected = SelectedNode;
+        if (selected is null) {
+            return;
+        }
+
+        Node current = selected.Node;
+        Node parent = current.Parent;
+
+        int currentIdx = parent?.Children.IndexOf(current) ?? -1;
+        if (currentIdx == -1) {
+            return;
+        }
+
+        if (currentIdx + 1 < parent!.Children.Count) {
+            Node nextNode = parent.Children[currentIdx + 1];
+            if (nextNode.Tags["imapo.treenode"] is TreeGridNode next) {
+                SelectedNode = next;
+            }
+        }
+    }
+
     public void OpenImage()
     {
+        if (SelectedNode is null) {
+            return;
+        }
+
         if (!SelectedNode.Node.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) {
             return;
         }

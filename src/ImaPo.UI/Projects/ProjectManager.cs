@@ -52,7 +52,7 @@ public class ProjectManager
 
         Po po;
         if (!File.Exists(filePath)) {
-            po = new Po(new PoHeader(settings.Name, "author", "en"));
+            po = new Po(new PoHeader(settings.Name, settings.ContactAddress, "en"));
         } else {
             using var binary = new BinaryFormat(DataStreamFactory.FromFile(filePath, FileOpenMode.Read));
             po = binary2Po.Convert(binary);

@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using System.Windows.Input;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -9,6 +8,8 @@ namespace ImaPo.UI.Main;
 public sealed class MainWindow : Form
 {
     private readonly MainViewModel viewModel;
+    private TextArea imageTextBox;
+    private TreeGridView tree;
 
     public MainWindow()
     {
@@ -60,8 +61,15 @@ public sealed class MainWindow : Form
         var contextBox = new TextBox { ReadOnly = true };
         _ = contextBox.TextBinding.BindDataContext((MainViewModel vm) => vm.ContextText);
 
-        var imageTextBox = new TextArea();
+        imageTextBox = new TextArea();
         _ = imageTextBox.TextBinding.BindDataContext((MainViewModel vm) => vm.ImageText);
+        imageTextBox.KeyUp += (_, e) => {
+            if (e.Control && e.Key == Keys.Down) {
+                Binding.ExecuteCommand(
+                    viewModel,
+                    Binding.Property((MainViewModel vm) => vm.SelectNextNodeCommand));
+            }
+        };
 
         var statusLabel = new Label { Text = "Saved!" };
         var poTable = new TableLayout {
@@ -97,7 +105,7 @@ public sealed class MainWindow : Form
     private Panel CreateTreeBar()
     {
         // Tree-view with just one "column" with icon and name, so the icon is close to the name.
-        var tree = new TreeGridView { ShowHeader = false, Border = BorderType.Line, Style = "analyze-tree", };
+        tree = new TreeGridView { ShowHeader = false, Border = BorderType.Line, Style = "analyze-tree", };
         tree.Columns.Add(
             new GridColumn {
                 DataCell = new TextBoxCell { Binding = Binding.Property((TreeGridNode node) => node.QualifiedName) },
@@ -108,9 +116,10 @@ public sealed class MainWindow : Form
             });
         tree.DataStore = viewModel.RootNode;
         _ = tree.SelectedItemBinding.BindDataContext((MainViewModel vm) => vm.SelectedNode);
-        tree.MouseDoubleClick += (sender, e) => Binding.ExecuteCommand(
+        tree.SelectedItemChanged += (_, _) => Binding.ExecuteCommand(
             viewModel,
             Binding.Property((MainViewModel vm) => vm.OpenImageCommand));
+        tree.SelectedItemChanged += (_, _) => imageTextBox.SelectAll();
 
         // Eto doesn't implement the binding fully: https://github.com/picoe/Eto/issues/240
         viewModel.OnNodeUpdate += (_, node) => {

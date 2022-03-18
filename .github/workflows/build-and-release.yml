@@ -63,7 +63,7 @@ jobs:
     name: "[${{ matrix.os }}] Build and test"
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest ]
+        os: [ windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - name: "Checkout"

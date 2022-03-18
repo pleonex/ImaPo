@@ -6,6 +6,8 @@ public class ProjectSettings
 {
     public string Name { get; set; }
 
+    public string ContactAddress { get; set; }
+
     public string TextFolder { get; set; }
 
     public string ImageFolder { get; set; }

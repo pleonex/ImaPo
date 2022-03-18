@@ -14,8 +14,11 @@ public class TreeGridNode : TreeGridItem
     {
         this.projectManager = projectManager;
         Node = node;
+        node.Tags["imapo.treenode"] = this;
 
-        var children = node.Children.OrderBy(c => !c.IsContainer).ThenBy(c => c.Name);
+        var children = node.Children
+            .OrderBy(c => !c.IsContainer)
+            .ThenBy(c => c.Name);
         foreach (var childNode in children) {
             var child = new TreeGridNode(childNode, projectManager);
             Children.Add(child);
