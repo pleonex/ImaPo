@@ -1,6 +1,8 @@
 # ImaPo [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://choosealicense.com/licenses/mit/) ![Build and release](https://github.com/pleonex/imapo/workflows/Build%20and%20release/badge.svg)
 
-Tool to help to translate images via PO files in Weblate.
+> Tool to help to translate images via PO files in Weblate.
+
+![screenshot](https://pleonex.dev/ImaPo/images/screenshot.png)
 
 <!-- prettier-ignore -->
 | Release | Package                                                                                                                                                         |

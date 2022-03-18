@@ -115,6 +115,7 @@ public sealed class MainWindow : Form
         // Eto doesn't implement the binding fully: https://github.com/picoe/Eto/issues/240
         viewModel.OnNodeUpdate += (_, node) => {
             if (node is null) {
+                tree.DataStore = viewModel.RootNode;
                 tree.ReloadData();
             } else {
                 tree.ReloadItem(node);

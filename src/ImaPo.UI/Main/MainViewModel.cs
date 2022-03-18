@@ -8,12 +8,16 @@ using Microsoft.Toolkit.Mvvm.ComponentModel;
 using YamlDotNet.Serialization;
 using Yarhl.FileSystem;
 using Yarhl.IO;
+using Yarhl.Media.Text;
 using RelayCommand = Microsoft.Toolkit.Mvvm.Input.RelayCommand;
 
 namespace ImaPo.UI.Main;
 
 public sealed class MainViewModel : ObservableObject
 {
+    private ProjectManager projectManager;
+
+    private TreeGridNode? openedNode;
     private TreeGridNode selectedNode;
     private Image currentImage;
     private string contextText;
@@ -27,10 +31,11 @@ public sealed class MainViewModel : ObservableObject
         NewProjectCommand = new RelayCommand(NewProject);
         OpenImageCommand = new RelayCommand(OpenImage);
 
-        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"));
+        var dummyProject = new ProjectManager(new ProjectSettings());
+        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), dummyProject);
     }
 
-    public event EventHandler<TreeGridNode> OnNodeUpdate;
+    public event EventHandler<TreeGridNode?> OnNodeUpdate;
 
     public ICommand QuitCommand { get; }
 
@@ -47,7 +52,7 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref selectedNode, value);
     }
 
-    public TreeGridNode RootNode { get; }
+    public TreeGridNode RootNode { get; set; }
 
     public Image CurrentImage {
         get => currentImage;
@@ -61,7 +66,11 @@ public sealed class MainViewModel : ObservableObject
 
     public string ImageText {
         get => imageText;
-        set => SetProperty(ref imageText, value);
+        set {
+            if (SetProperty(ref imageText, value)) {
+                OnImageTextChange();
+            }
+        }
     }
 
     public void NewProject()
@@ -83,6 +92,7 @@ public sealed class MainViewModel : ObservableObject
         var project = new DeserializerBuilder()
             .Build()
             .Deserialize<ProjectSettings>(projectText);
+        projectManager = new ProjectManager(project);
 
         var projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
         string imagePath = Path.Combine(projectPath, project.ImageFolder);
@@ -91,11 +101,14 @@ public sealed class MainViewModel : ObservableObject
             _ = Directory.CreateDirectory(textPath);
         }
 
-        RootNode.Node.RemoveChildren();
+        RootNode.Node.Dispose();
+        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
         RootNode.Add(NodeFactory.FromDirectory(imagePath, "*.png", "Images", subDirectories: true));
         RootNode.Add(NodeFactory.FromDirectory(textPath, "*.po*", "Texts", subDirectories: true));
 
-        OnNodeUpdate?.Invoke(this, RootNode);
+#pragma warning disable S4220 // pending good refactor
+        OnNodeUpdate?.Invoke(this, null);
+#pragma warning restore S4220
     }
 
     public void OpenImage()
@@ -104,11 +117,24 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        openedNode = SelectedNode;
+
         DataStream stream = SelectedNode.Node.Stream!;
         stream.Position = 0;
         CurrentImage = new Bitmap(stream);
 
-        ContextText = $"image={SelectedNode.Node.Path}";
+        PoEntry entry = projectManager.GetOrAddEntry(SelectedNode.Node.Path);
+        ContextText = entry.Context;
+        ImageText = entry.Original;
+    }
+
+    public void OnImageTextChange()
+    {
+        if (openedNode is null) {
+            return;
+        }
+
+        projectManager.AddOrUpdateEntry(openedNode.Node.Path, ImageText);
     }
 
     private void Quit() => Application.Instance.Quit();

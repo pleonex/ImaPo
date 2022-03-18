@@ -1,20 +1,23 @@
 using System;
 using System.Linq;
 using Eto.Forms;
+using ImaPo.UI.Projects;
 using Yarhl.FileSystem;
 
 namespace ImaPo.UI.Main;
 
 public class TreeGridNode : TreeGridItem
 {
-    public TreeGridNode(Node node)
-        : base()
+    private readonly ProjectManager projectManager;
+
+    public TreeGridNode(Node node, ProjectManager projectManager)
     {
+        this.projectManager = projectManager;
         Node = node;
 
         var children = node.Children.OrderBy(c => !c.IsContainer).ThenBy(c => c.Name);
         foreach (var childNode in children) {
-            var child = new TreeGridNode(childNode);
+            var child = new TreeGridNode(childNode, projectManager);
             Children.Add(child);
         }
     }
@@ -30,7 +33,8 @@ public class TreeGridNode : TreeGridItem
             }
 
             if (Node.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) {
-                return "\uf779";
+                string status = projectManager.HasEntry(Node.Path) ? "\uf00c " : "\uf00d ";
+                return status + "\uf779";
             }
 
             if (Node.Name.EndsWith(".po", StringComparison.OrdinalIgnoreCase)) {
@@ -47,7 +51,7 @@ public class TreeGridNode : TreeGridItem
 
     public void Add(Node node)
     {
-        var child = new TreeGridNode(node);
+        var child = new TreeGridNode(node, projectManager);
         Children.Add(child);
         Node.Add(node);
     }
@@ -58,7 +62,7 @@ public class TreeGridNode : TreeGridItem
 
         var children = Node.Children.OrderBy(c => !c.IsContainer);
         foreach (var childNode in children) {
-            var child = new TreeGridNode(childNode);
+            var child = new TreeGridNode(childNode, projectManager);
             Children.Add(child);
         }
     }
