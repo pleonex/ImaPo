@@ -44,6 +44,11 @@ public sealed class MainWindow : Form
                     Shortcut = Application.Instance.CommonModifier | Keys.O,
                     DelegatedCommand = viewModel.OpenProjectCommand,
                 },
+                new Command {
+                    MenuText = "&Upload screenshots",
+                    Shortcut = Application.Instance.CommonModifier | Keys.U,
+                    DelegatedCommand = viewModel.UploadScreenshotCommand,
+                },
             },
             QuitItem = new Command {
                 MenuText = "&Quit",

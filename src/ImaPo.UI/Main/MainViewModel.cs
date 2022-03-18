@@ -4,6 +4,7 @@ using System.Windows.Input;
 using Eto.Drawing;
 using Eto.Forms;
 using ImaPo.UI.Projects;
+using ImaPo.UI.ScreenshotUpload;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using YamlDotNet.Serialization;
 using Yarhl.FileSystem;
@@ -15,6 +16,7 @@ namespace ImaPo.UI.Main;
 
 public sealed class MainViewModel : ObservableObject
 {
+    private ProjectSettings? project;
     private ProjectManager projectManager;
 
     private TreeGridNode? openedNode;
@@ -31,6 +33,7 @@ public sealed class MainViewModel : ObservableObject
         NewProjectCommand = new RelayCommand(NewProject);
         OpenImageCommand = new RelayCommand(OpenImage);
         SelectNextNodeCommand = new RelayCommand(SelectNextNode);
+        UploadScreenshotCommand = new RelayCommand(OpenUploadScreenshot, () => project is not null);
 
         var dummyProject = new ProjectManager(new ProjectSettings());
         RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), dummyProject);
@@ -49,6 +52,8 @@ public sealed class MainViewModel : ObservableObject
     public ICommand OpenImageCommand { get; }
 
     public ICommand SelectNextNodeCommand { get; }
+
+    public RelayCommand UploadScreenshotCommand { get; }
 
     public TreeGridNode? SelectedNode {
         get => selectedNode;
@@ -92,7 +97,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         string projectText = File.ReadAllText(dialog.FileName);
-        var project = new DeserializerBuilder()
+        project = new DeserializerBuilder()
             .Build()
             .Deserialize<ProjectSettings>(projectText);
         projectManager = new ProjectManager(project);
@@ -111,6 +116,8 @@ public sealed class MainViewModel : ObservableObject
 #pragma warning disable S4220 // pending good refactor
         OnNodeUpdate?.Invoke(this, null);
 #pragma warning restore S4220
+
+        UploadScreenshotCommand.NotifyCanExecuteChanged();
     }
 
     public void SelectNextNode()
@@ -164,6 +171,12 @@ public sealed class MainViewModel : ObservableObject
         }
 
         projectManager.AddOrUpdateEntry(openedNode.Node.Path, ImageText);
+    }
+
+    public void OpenUploadScreenshot()
+    {
+        var upload = new ScreenshotUploadView(project!);
+        upload.Show();
     }
 
     private void Quit() => Application.Instance.Quit();

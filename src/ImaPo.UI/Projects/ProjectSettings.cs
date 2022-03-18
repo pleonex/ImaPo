@@ -8,6 +8,12 @@ public class ProjectSettings
 
     public string ContactAddress { get; set; }
 
+    public string Language { get; set; }
+
+    public string WeblateUrl { get; set; }
+
+    public string WeblateProjectSlug { get; set; }
+
     public string TextFolder { get; set; }
 
     public string ImageFolder { get; set; }
