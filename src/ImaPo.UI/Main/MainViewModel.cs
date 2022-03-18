@@ -14,8 +14,6 @@ namespace ImaPo.UI.Main;
 
 public sealed class MainViewModel : ObservableObject
 {
-    private string projectPath;
-    private ProjectSettings project;
     private TreeGridNode selectedNode;
     private Image currentImage;
     private string contextText;
@@ -82,11 +80,11 @@ public sealed class MainViewModel : ObservableObject
         }
 
         string projectText = File.ReadAllText(dialog.FileName);
-        project = new DeserializerBuilder()
+        var project = new DeserializerBuilder()
             .Build()
             .Deserialize<ProjectSettings>(projectText);
 
-        projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
+        var projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
         string imagePath = Path.Combine(projectPath, project.ImageFolder);
         string textPath = Path.Combine(projectPath, project.TextFolder);
         if (!Directory.Exists(textPath)) {
