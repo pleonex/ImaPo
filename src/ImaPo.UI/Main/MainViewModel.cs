@@ -3,7 +3,9 @@ using System.IO;
 using System.Windows.Input;
 using Eto.Drawing;
 using Eto.Forms;
+using ImaPo.UI.Projects;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
+using YamlDotNet.Serialization;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 using RelayCommand = Microsoft.Toolkit.Mvvm.Input.RelayCommand;
@@ -12,6 +14,8 @@ namespace ImaPo.UI.Main;
 
 public sealed class MainViewModel : ObservableObject
 {
+    private string projectPath;
+    private ProjectSettings project;
     private TreeGridNode selectedNode;
     private Image currentImage;
     private string contextText;
@@ -21,7 +25,8 @@ public sealed class MainViewModel : ObservableObject
     {
         QuitCommand = new RelayCommand(Quit);
         AboutCommand = new RelayCommand(OpenAboutDialog);
-        OpenFolderCommand = new RelayCommand(OpenFolder);
+        OpenProjectCommand = new RelayCommand(OpenProject);
+        NewProjectCommand = new RelayCommand(NewProject);
         OpenImageCommand = new RelayCommand(OpenImage);
 
         RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"));
@@ -33,7 +38,9 @@ public sealed class MainViewModel : ObservableObject
 
     public ICommand AboutCommand { get; }
 
-    public ICommand OpenFolderCommand { get; }
+    public ICommand NewProjectCommand { get; }
+
+    public ICommand OpenProjectCommand { get; }
 
     public ICommand OpenImageCommand { get; }
 
@@ -59,20 +66,37 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref imageText, value);
     }
 
-    public void OpenFolder()
+    public void NewProject()
     {
-        RootNode.Node.RemoveChildren();
+        _ = MessageBox.Show("Not supported yet, sorry. Create the project by hand.");
+    }
 
-        var dialog = new SelectFolderDialog {
-            Title = "Add external folders",
+    public void OpenProject()
+    {
+        var dialog = new OpenFileDialog {
+            Title = "Open project file",
+            Filters = { new FileFilter("imapo.yml", ".yml", ".yaml") },
         };
         if (dialog.ShowDialog(Application.Instance.MainForm) != DialogResult.Ok) {
             return;
         }
 
-        string name = Path.GetFileName(dialog.Directory!);
-        Node node = NodeFactory.FromDirectory(dialog.Directory!, "*", name, subDirectories: true);
-        RootNode.Add(node);
+        string projectText = File.ReadAllText(dialog.FileName);
+        project = new DeserializerBuilder()
+            .Build()
+            .Deserialize<ProjectSettings>(projectText);
+
+        projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
+        string imagePath = Path.Combine(projectPath, project.ImageFolder);
+        string textPath = Path.Combine(projectPath, project.TextFolder);
+        if (!Directory.Exists(textPath)) {
+            _ = Directory.CreateDirectory(textPath);
+        }
+
+        RootNode.Node.RemoveChildren();
+        RootNode.Add(NodeFactory.FromDirectory(imagePath, "*.png", "Images", subDirectories: true));
+        RootNode.Add(NodeFactory.FromDirectory(textPath, "*.po*", "Texts", subDirectories: true));
+
         OnNodeUpdate?.Invoke(this, RootNode);
     }
 

@@ -34,9 +34,14 @@ public sealed class MainWindow : Form
             Items = { new ButtonMenuItem { Text = "&File", }, },
             ApplicationItems = {
                 new Command {
-                    MenuText = "&Open folder",
+                    MenuText = "&New project",
                     Shortcut = Application.Instance.CommonModifier | Keys.O,
-                    DelegatedCommand = viewModel.OpenFolderCommand,
+                    DelegatedCommand = viewModel.NewProjectCommand,
+                },
+                new Command {
+                    MenuText = "&Open project",
+                    Shortcut = Application.Instance.CommonModifier | Keys.O,
+                    DelegatedCommand = viewModel.OpenProjectCommand,
                 },
             },
             QuitItem = new Command {

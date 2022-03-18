@@ -3,6 +3,7 @@
     <ItemGroup>
         <PackageVersion Include="Yarhl" Version="4.0.0-preview.153" />
         <PackageVersion Include="Yarhl.Media" Version="4.0.0-preview.153" />
+        <PackageVersion Include="YamlDotNet" Version="11.2.1" />
         
         <PackageVersion Include="Microsoft.Toolkit.Mvvm" Version="7.1.2" />
         <PackageVersion Include="Eto.Forms" Version="2.6.1" />
