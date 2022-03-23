@@ -1,13 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaPo.UI", "ImaPo.UI\ImaPo.UI.csproj", "{07E6EBB9-380D-4813-AFCD-E5856501929A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImaPo.UI", "ImaPo.UI\ImaPo.UI.csproj", "{07E6EBB9-380D-4813-AFCD-E5856501929A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaPo.Gtk", "ImaPo.Gtk\ImaPo.Gtk.csproj", "{CB7B12D4-90B6-4564-8ECC-B6954E61A11F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImaPo.Gtk", "ImaPo.Gtk\ImaPo.Gtk.csproj", "{CB7B12D4-90B6-4564-8ECC-B6954E61A11F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImaPo.Tests", "ImaPo.Tests\ImaPo.Tests.csproj", "{276997DA-06FC-4C8A-AA82-92C3373C69A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImaPo.Tests", "ImaPo.Tests\ImaPo.Tests.csproj", "{276997DA-06FC-4C8A-AA82-92C3373C69A3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2D5F04FD-2BC5-4571-B427-4049B4EF3E00}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\build.cake = ..\build.cake
+		..\README.md = ..\README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,9 +24,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{07E6EBB9-380D-4813-AFCD-E5856501929A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -58,5 +62,11 @@ Global
 		{276997DA-06FC-4C8A-AA82-92C3373C69A3}.Release|x64.Build.0 = Release|Any CPU
 		{276997DA-06FC-4C8A-AA82-92C3373C69A3}.Release|x86.ActiveCfg = Release|Any CPU
 		{276997DA-06FC-4C8A-AA82-92C3373C69A3}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F2034A4D-8DE9-4446-B57F-0C970C7879E8}
 	EndGlobalSection
 EndGlobal

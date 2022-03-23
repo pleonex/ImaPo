@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using Yarhl.IO;
 using Yarhl.Media.Text;
 
@@ -26,9 +27,10 @@ public class ProjectManager
 
     public string GetRelativePath(string path) => path["/root/Images/".Length ..];
 
-    public string GetRelatedPoPath(string path)
+    public string? GetRelatedPoName(string path)
     {
         string? poName = null;
+
         string relativePath = GetRelativePath(path);
         foreach ((string key, string value) in settings.TextToImageFolderMapping) {
             if (relativePath.StartsWith(key, StringComparison.Ordinal)) {
@@ -36,12 +38,16 @@ public class ProjectManager
             }
         }
 
-        if (poName is null) {
-            throw new FileNotFoundException($"Missing entry to map: {path}");
-        }
+        return poName;
+    }
 
+    public string GetRelatedPoPath(string path)
+    {
+        string poName = GetRelatedPoName(path) ?? throw new FileNotFoundException($"Invalid project config for image: {path}");
         return Path.Combine(settings.TextFolder, poName + GetTextExtension());
     }
+
+    public bool IsValidImage(string path) => GetRelatedPoName(path) is not null;
 
     public Po GetRelatedPo(string path)
     {

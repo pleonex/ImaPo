@@ -96,22 +96,27 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        string projectText = File.ReadAllText(dialog.FileName);
-        project = new DeserializerBuilder()
-            .Build()
-            .Deserialize<ProjectSettings>(projectText);
-        projectManager = new ProjectManager(project);
+        try {
+            string projectText = File.ReadAllText(dialog.FileName);
+            project = new DeserializerBuilder()
+                .Build()
+                .Deserialize<ProjectSettings>(projectText);
+            projectManager = new ProjectManager(project);
 
-        var projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
-        string imagePath = Path.Combine(projectPath, project.ImageFolder);
-        string textPath = Path.Combine(projectPath, project.TextFolder);
-        if (!Directory.Exists(textPath)) {
-            _ = Directory.CreateDirectory(textPath);
+            var projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
+            string imagePath = Path.Combine(projectPath, project.ImageFolder);
+            string textPath = Path.Combine(projectPath, project.TextFolder);
+            if (!Directory.Exists(textPath)) {
+                _ = Directory.CreateDirectory(textPath);
+            }
+
+            RootNode.Node.Dispose();
+            RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
+            RootNode.Add(NodeFactory.FromDirectory(imagePath, "*.png", "Images", subDirectories: true));
+        } catch (Exception ex) {
+            _ = MessageBox.Show($"Error opening project file: {ex}", MessageBoxType.Error);
+            return;
         }
-
-        RootNode.Node.Dispose();
-        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
-        RootNode.Add(NodeFactory.FromDirectory(imagePath, "*.png", "Images", subDirectories: true));
 
 #pragma warning disable S4220 // pending good refactor
         OnNodeUpdate?.Invoke(this, null);
@@ -150,6 +155,16 @@ public sealed class MainViewModel : ObservableObject
         }
 
         if (!SelectedNode.Node.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) {
+            return;
+        }
+
+        if (!projectManager.IsValidImage(SelectedNode.Node.Path)) {
+            string imagePath = SelectedNode.Node.Path["/root/".Length..];
+            _ = MessageBox.Show(
+                "Project does not have an associated PO file for this image. " +
+                $"Please review the project file to ensure the following path is included: {imagePath}",
+                "Invalid project configuration",
+                MessageBoxType.Error);
             return;
         }
 

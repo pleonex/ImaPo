@@ -36,8 +36,12 @@ public class TreeGridNode : TreeGridItem
             }
 
             if (Node.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) {
-                string status = projectManager.HasEntry(Node.Path) ? "\uf00c " : "\uf00d ";
-                return status + "\uf779";
+                if (projectManager.IsValidImage(Node.Path)) {
+                    string status = projectManager.HasEntry(Node.Path) ? "\uf00c " : "\uf00d ";
+                    return status + "\uf779";
+                }
+
+                return "\uf128";
             }
 
             if (Node.Name.EndsWith(".po", StringComparison.OrdinalIgnoreCase)) {
