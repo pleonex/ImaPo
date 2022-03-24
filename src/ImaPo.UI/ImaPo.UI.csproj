@@ -17,6 +17,7 @@
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Eto.Forms" />
     <PackageReference Include="Microsoft.Toolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
   </ItemGroup>
 
 </Project>

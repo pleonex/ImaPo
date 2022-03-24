@@ -89,13 +89,6 @@ public sealed class MainWindow : Form
 
         imageTextBox = new TextArea();
         _ = imageTextBox.TextBinding.BindDataContext((MainViewModel vm) => vm.ImageText);
-        imageTextBox.KeyUp += (_, e) => {
-            if (e.Control && e.Key == Keys.Down) {
-                Binding.ExecuteCommand(
-                    viewModel,
-                    Binding.Property((MainViewModel vm) => vm.SelectNextNodeCommand));
-            }
-        };
 
         var poTable = new TableLayout {
             Padding = new Padding(5),

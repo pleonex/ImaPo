@@ -32,10 +32,7 @@ public class TreeGridNode : TreeGridItem
     public TreeGridNode(Node node, ProjectManager projectManager)
     {
         this.projectManager = projectManager;
-
         Node = node;
-        node.Tags["imapo.treenode"] = this;
-
         Kind = GetKind(node);
 
         IOrderedEnumerable<Node> children = node.Children
@@ -62,15 +59,8 @@ public class TreeGridNode : TreeGridItem
             _ => "\uf128", // '?'
         };
 
-    private string TranslationStatusIcon {
-        get {
-            if (!projectManager.IsValidImage(Node.Path)) {
-                return "\uf128"; // '?', shouldn't happen but who knows
-            }
-
-            return projectManager.HasEntry(Node.Path) ? "\uf00c" : "\uf00d"; // tick or cross icon
-        }
-    }
+    private string TranslationStatusIcon =>
+        projectManager.HasComponentTextForImage(Node) ? "\uf00c" : "\uf00d"; // tick or cross
 
     public void Add(Node node)
     {

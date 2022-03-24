@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "Cake: Run Build",
-            "program": "${workspaceFolder}/src/ImaPo.Gtk/bin/Debug/net6.0/ImaPo.Gtk.dll",
+            "program": "${workspaceFolder}/src/ImaPo.Gtk/bin/Debug/net6.0/ImaPo.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,

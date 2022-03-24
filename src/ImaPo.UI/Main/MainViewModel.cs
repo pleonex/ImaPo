@@ -18,14 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 using System;
-using System.IO;
 using System.Windows.Input;
 using Eto.Drawing;
 using Eto.Forms;
 using ImaPo.UI.Projects;
 using ImaPo.UI.ScreenshotUpload;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
-using YamlDotNet.Serialization;
 using Yarhl.FileSystem;
 using Yarhl.IO;
 using Yarhl.Media.Text;
@@ -35,10 +33,9 @@ namespace ImaPo.UI.Main;
 
 public sealed class MainViewModel : ObservableObject
 {
-    private ProjectSettings? project;
-    private ProjectManager projectManager;
+    private readonly ProjectManager projectManager;
 
-    private TreeGridNode? openedNode;
+    private Node? openedNode;
     private TreeGridNode selectedNode;
     private Image currentImage;
     private string contextText;
@@ -51,11 +48,10 @@ public sealed class MainViewModel : ObservableObject
         OpenProjectCommand = new RelayCommand(OpenProject);
         NewProjectCommand = new RelayCommand(NewProject);
         OpenImageCommand = new RelayCommand(OpenImage);
-        SelectNextNodeCommand = new RelayCommand(SelectNextNode);
-        UploadScreenshotCommand = new RelayCommand(OpenUploadScreenshot, () => project is not null);
+        UploadScreenshotCommand = new RelayCommand(OpenUploadScreenshot, () => projectManager.OpenedProject);
 
-        var dummyProject = new ProjectManager(new ProjectSettings());
-        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), dummyProject);
+        projectManager = new ProjectManager();
+        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
     }
 
     public event EventHandler<TreeGridNode?> OnNodeUpdate;
@@ -69,8 +65,6 @@ public sealed class MainViewModel : ObservableObject
     public ICommand OpenProjectCommand { get; }
 
     public ICommand OpenImageCommand { get; }
-
-    public ICommand SelectNextNodeCommand { get; }
 
     public RelayCommand UploadScreenshotCommand { get; }
 
@@ -110,61 +104,27 @@ public sealed class MainViewModel : ObservableObject
         var dialog = new OpenFileDialog {
             Title = "Open project file",
             Filters = { new FileFilter("imapo.yml", ".yml", ".yaml") },
+            CheckFileExists = true,
         };
         if (dialog.ShowDialog(Application.Instance.MainForm) != DialogResult.Ok) {
             return;
         }
 
         try {
-            string projectText = File.ReadAllText(dialog.FileName);
-            project = new DeserializerBuilder()
-                .Build()
-                .Deserialize<ProjectSettings>(projectText);
-            projectManager = new ProjectManager(project);
+            projectManager.OpenProject(dialog.FileName);
 
-            string projectPath = Path.GetDirectoryName(dialog.FileName) ?? throw new FileNotFoundException("Invalid path");
-            string imagePath = Path.Combine(projectPath, project.ImageFolder);
-            string textPath = Path.Combine(projectPath, project.TextFolder);
-            if (!Directory.Exists(textPath)) {
-                _ = Directory.CreateDirectory(textPath);
+            RootNode.Node.RemoveChildren();
+            foreach (TranslationUnit unit in projectManager.Settings.Components) {
+                Node translationNode = projectManager.CreateTranslationNodeHierarchy(unit);
+                RootNode.Add(translationNode);
             }
-
-            RootNode.Node.Dispose();
-            RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
-            RootNode.Add(NodeFactory.FromDirectory(imagePath, "*", "Images", subDirectories: true, FileOpenMode.Read));
         } catch (Exception ex) {
             _ = MessageBox.Show($"Error opening project file: {ex}", MessageBoxType.Error);
             return;
         }
 
-#pragma warning disable S4220 // pending good refactor
-        OnNodeUpdate?.Invoke(this, null);
-#pragma warning restore S4220
-
+        OnNodeUpdate?.Invoke(this, RootNode);
         UploadScreenshotCommand.NotifyCanExecuteChanged();
-    }
-
-    public void SelectNextNode()
-    {
-        TreeGridNode? selected = SelectedNode;
-        if (selected is null) {
-            return;
-        }
-
-        Node current = selected.Node;
-        Node parent = current.Parent;
-
-        int currentIdx = parent?.Children.IndexOf(current) ?? -1;
-        if (currentIdx == -1) {
-            return;
-        }
-
-        if (currentIdx + 1 < parent!.Children.Count) {
-            Node nextNode = parent.Children[currentIdx + 1];
-            if (nextNode.Tags["imapo.treenode"] is TreeGridNode next) {
-                SelectedNode = next;
-            }
-        }
     }
 
     public void OpenImage()
@@ -173,23 +133,21 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        if (!projectManager.IsValidImage(SelectedNode.Node.Path)) {
-            string imagePath = SelectedNode.Node.Path["/root/".Length..];
-            _ = MessageBox.Show(
-                "Project does not have an associated PO file for this image. " +
-                $"Please review the project file to ensure the following path is included: {imagePath}",
-                "Invalid project configuration",
-                MessageBoxType.Error);
+        if (SelectedNode.Node.Stream is null) {
+            _ = MessageBox.Show($"Error opening image. Unknown node format??", MessageBoxType.Error);
             return;
         }
 
-        openedNode = SelectedNode;
+        openedNode = SelectedNode.Node;
 
-        DataStream stream = SelectedNode.Node.Stream!;
+        DataStream stream = openedNode.Stream!;
         stream.Position = 0;
-        CurrentImage = new Bitmap(stream);
 
-        PoEntry entry = projectManager.GetOrAddEntry(SelectedNode.Node.Path);
+        Image? oldImage = CurrentImage;
+        CurrentImage = new Bitmap(stream);
+        oldImage?.Dispose();
+
+        PoEntry entry = projectManager.GetOrCreateEntry(openedNode);
         ContextText = entry.Context;
         ImageText = entry.Original;
     }
@@ -200,12 +158,12 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        projectManager.AddOrUpdateEntry(openedNode.Node.Path, ImageText);
+        projectManager.AddOrUpdateEntry(openedNode, ImageText);
     }
 
     public void OpenUploadScreenshot()
     {
-        var upload = new ScreenshotUploadView(project!);
+        var upload = new ScreenshotUploadView(projectManager.Settings);
         upload.Show();
     }
 

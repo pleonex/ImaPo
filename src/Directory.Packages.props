@@ -4,14 +4,15 @@
         <PackageVersion Include="Yarhl" Version="4.0.0-preview.153" />
         <PackageVersion Include="Yarhl.Media" Version="4.0.0-preview.153" />
         <PackageVersion Include="YamlDotNet" Version="11.2.1" />
-        
+        <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="6.0.0" />
+
         <PackageVersion Include="Microsoft.Toolkit.Mvvm" Version="7.1.2" />
         <PackageVersion Include="Eto.Forms" Version="2.6.1" />
         <PackageVersion Include="Eto.Platform.Gtk" Version="2.6.1" />
         <PackageVersion Include="GtkSharp.Dependencies" Version="1.1.1" />
         <PackageVersion Include="Eto.Platform.Mac64" Version="2.5.11" />
         <PackageVersion Include="Eto.Platform.Wpf" Version="2.5.11" />
-        
+
         <PackageVersion Include="nunit" Version="3.13.2" />
         <PackageVersion Include="NUnit3TestAdapter" Version="4.2.1" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.1.0"/>
