@@ -1,3 +1,22 @@
+// Copyright (c) 2022 Benito Palacios Sánchez
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 using System;
 using System.Reflection;
 using Eto.Drawing;
@@ -23,7 +42,8 @@ public sealed class MainWindow : Form
     {
         // Icon = Icon.FromResource(ResourcesName.Icon)
         Version version = Assembly.GetExecutingAssembly().GetName().Version;
-        Title = $"ImaPo ~~ {version}";
+        string versionText = version.Build == 0 ? "DEVELOPMENT BUILD" : $"v{version}";
+        Title = "ImaPo ~~ " + versionText;
         ClientSize = new Size(800, 600);
 
         Menu = CreateMenuBar();
@@ -62,6 +82,7 @@ public sealed class MainWindow : Form
     {
         var imageView = new ImageView();
         _ = imageView.BindDataContext(v => v.Image, (MainViewModel vm) => vm.CurrentImage);
+        var scrollableImage = new Scrollable { Content = imageView };
 
         var contextBox = new TextBox { ReadOnly = true };
         _ = contextBox.TextBinding.BindDataContext((MainViewModel vm) => vm.ContextText);
@@ -76,9 +97,8 @@ public sealed class MainWindow : Form
             }
         };
 
-        var statusLabel = new Label { Text = "Saved!" };
         var poTable = new TableLayout {
-            Padding = new Padding(10),
+            Padding = new Padding(5),
             Spacing = new Size(5, 5),
             Rows = {
                 new TableRow(
@@ -86,25 +106,29 @@ public sealed class MainWindow : Form
                     new TableCell(contextBox, true)),
                 new TableRow(
                     new Label { Text = "Text", VerticalAlignment = VerticalAlignment.Top },
-                    new TableCell(imageTextBox, true),
-                    statusLabel),
+                    new TableCell(imageTextBox, true)),
             },
         };
 
-        var contentPanel = new StackLayout(imageView, null, poTable) {
+        var savingLabel = new Label {
+            Text = "Saves synchronously on typing",
+            Font = new Font("Ubuntu Nerd Font", 10, FontStyle.Italic),
+        };
+
+        var contentPanel = new StackLayout(scrollableImage, null, savingLabel, poTable) {
+            Padding = new Padding(5),
+            Spacing = 5,
             Orientation = Orientation.Vertical,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
         };
 
-        var splitter = new Splitter {
+        return new Splitter {
             Orientation = Orientation.Horizontal,
             FixedPanel = SplitterFixedPanel.Panel1,
             Panel1MinimumSize = 300,
             Panel1 = CreateTreeBar(),
             Panel2 = contentPanel,
         };
-
-        return splitter;
     }
 
     private Panel CreateTreeBar()
@@ -136,7 +160,6 @@ public sealed class MainWindow : Form
             }
         };
 
-        var scrollableTree = new Scrollable { Content = tree };
-        return scrollableTree;
+        return new Scrollable { Content = tree };
     }
 }

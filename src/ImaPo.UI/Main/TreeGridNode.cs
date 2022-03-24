@@ -1,4 +1,23 @@
-using System;
+// Copyright (c) 2022 Benito Palacios Sánchez
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+using System.IO;
 using System.Linq;
 using Eto.Forms;
 using ImaPo.UI.Projects;
@@ -13,46 +32,43 @@ public class TreeGridNode : TreeGridItem
     public TreeGridNode(Node node, ProjectManager projectManager)
     {
         this.projectManager = projectManager;
+
         Node = node;
         node.Tags["imapo.treenode"] = this;
 
-        var children = node.Children
+        Kind = GetKind(node);
+
+        IOrderedEnumerable<Node> children = node.Children
             .OrderBy(c => !c.IsContainer)
             .ThenBy(c => c.Name);
-        foreach (var childNode in children) {
-            var child = new TreeGridNode(childNode, projectManager);
-            Children.Add(child);
+        foreach (Node childNode in children) {
+            var childTree = new TreeGridNode(childNode, projectManager);
+            Children.Add(childTree);
         }
     }
 
     public Node Node { get; }
 
+    public TreeGridNodeKind Kind { get; }
+
     public string QualifiedName => $"{Icon} {Node.Name}";
 
-    public string Icon {
+    private string Icon =>
+        Kind switch {
+            TreeGridNodeKind.Folder => "\uf74a", // folder icon
+            TreeGridNodeKind.Image => $"{TranslationStatusIcon} \uf03e", // image icon
+            TreeGridNodeKind.Translation => "\ufac9", // translate icon
+            TreeGridNodeKind.Unknown => "\uf471", // binary icon
+            _ => "\uf128", // '?'
+        };
+
+    private string TranslationStatusIcon {
         get {
-            if (Node.Format is null || Node.Format is NodeContainerFormat) {
-                return "\uf74a";
+            if (!projectManager.IsValidImage(Node.Path)) {
+                return "\uf128"; // '?', shouldn't happen but who knows
             }
 
-            if (Node.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) {
-                if (projectManager.IsValidImage(Node.Path)) {
-                    string status = projectManager.HasEntry(Node.Path) ? "\uf00c " : "\uf00d ";
-                    return status + "\uf779";
-                }
-
-                return "\uf128";
-            }
-
-            if (Node.Name.EndsWith(".po", StringComparison.OrdinalIgnoreCase)) {
-                return "\ufac9";
-            }
-
-            if (Node.Name.EndsWith(".pot", StringComparison.OrdinalIgnoreCase)) {
-                return "\ufac9";
-            }
-
-            return "\uf471";
+            return projectManager.HasEntry(Node.Path) ? "\uf00c" : "\uf00d"; // tick or cross icon
         }
     }
 
@@ -63,14 +79,22 @@ public class TreeGridNode : TreeGridItem
         Node.Add(node);
     }
 
-    public void UpdateChildren()
+    private static TreeGridNodeKind GetKind(Node node)
     {
-        Children.Clear();
-
-        var children = Node.Children.OrderBy(c => !c.IsContainer);
-        foreach (var childNode in children) {
-            var child = new TreeGridNode(childNode, projectManager);
-            Children.Add(child);
+        if (node.Format is null or NodeContainerFormat) {
+            return TreeGridNodeKind.Folder;
         }
+
+        string extension = Path.GetExtension(node.Name).ToUpperInvariant();
+        return extension switch {
+            ".PNG" => TreeGridNodeKind.Image,
+            ".JPG" or ".JPEG" => TreeGridNodeKind.Image,
+            ".BMP" => TreeGridNodeKind.Image,
+            ".TIFF" => TreeGridNodeKind.Image,
+            ".GIF" => TreeGridNodeKind.Image,
+
+            ".PO" or ".POT" => TreeGridNodeKind.Translation,
+            _ => TreeGridNodeKind.Unknown,
+        };
     }
 }
