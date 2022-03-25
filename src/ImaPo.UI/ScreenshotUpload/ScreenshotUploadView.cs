@@ -23,7 +23,7 @@ using ImaPo.UI.Projects;
 
 namespace ImaPo.UI.ScreenshotUpload;
 
-public class ScreenshotUploadView : Form
+public class ScreenshotUploadView : Dialog
 {
     private readonly ScreenshotUploadViewModel viewModel;
 
@@ -32,34 +32,45 @@ public class ScreenshotUploadView : Form
         viewModel = new ScreenshotUploadViewModel(project);
         DataContext = viewModel;
 
-        Size = new Size(600, 250);
+        Title = "Upload images to Weblate";
+        Size = new Size(500, 250);
         Content = InitializeComponents();
     }
 
     private Control InitializeComponents()
     {
-        var tokenTextBox = new TextBox();
+        var tokenTextBox = new TextBox { PlaceholderText = "Token" };
         _ = tokenTextBox.TextBinding.BindDataContext((ScreenshotUploadViewModel vm) => vm.WeblateToken);
 
         var infoLayout = new TableLayout {
-            Padding = new Padding(10),
             Spacing = new Size(5, 5),
             Rows = {
-                new TableRow(new Label { Text = "API token:" }, tokenTextBox),
+                new TableRow(
+                    new Label { Text = "API token:", VerticalAlignment = VerticalAlignment.Center },
+                    tokenTextBox),
             },
         };
 
-        var progressBar = new ProgressBar();
-        var logsBox = new TextArea { ReadOnly = true };
+        var outputText = new TextArea {
+            ReadOnly = true,
+        };
+        viewModel.StatusUpdated += (_, e) => outputText.Text += $"{e}\n";
+
+        var progressBar = new ProgressBar {
+            Indeterminate = true,
+        };
+        progressBar.BindDataContext(p => p.Visible, (ScreenshotUploadViewModel vm) => vm.UploadCommand.IsRunning);
 
         var uploadBtn = new Button {
             Text = "Upload!",
             Command = viewModel.UploadCommand,
         };
 
-        return new StackLayout(infoLayout, progressBar, uploadBtn, logsBox) {
+        return new StackLayout(infoLayout, new StackLayoutItem(outputText, true), progressBar, uploadBtn) {
             Orientation = Orientation.Vertical,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Padding = 5,
+            Spacing = 5,
         };
     }
 }

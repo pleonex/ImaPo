@@ -17,27 +17,13 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-using Microsoft.Extensions.FileSystemGlobbing;
-using YamlDotNet.Serialization;
-
 namespace ImaPo.UI.Projects;
 
 public class TranslationUnit
 {
-    private string imageFilter;
+    public string Name { get; set; }
 
-    public string ImageFilter {
-        get => imageFilter;
-        set {
-            imageFilter = value;
-            ImageGlobPattern = new Matcher().AddInclude(value);
-        }
-    }
-
-    public string PoName { get; set; }
+    public string ImagesGlobPattern { get; set; }
 
     public string WeblateComponentSlug { get; set; }
-
-    [YamlIgnore]
-    public Matcher ImageGlobPattern { get; private set; }
 }

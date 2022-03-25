@@ -51,7 +51,6 @@ public sealed class MainViewModel : ObservableObject
         UploadScreenshotCommand = new RelayCommand(OpenUploadScreenshot, () => projectManager.OpenedProject);
 
         projectManager = new ProjectManager();
-        RootNode = new TreeGridNode(NodeFactory.CreateContainer("root"), projectManager);
     }
 
     public event EventHandler<TreeGridNode?> OnNodeUpdate;
@@ -73,7 +72,7 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref selectedNode, value);
     }
 
-    public TreeGridNode RootNode { get; set; }
+    public TreeGridNode? RootNode { get; set; }
 
     public Image CurrentImage {
         get => currentImage;
@@ -112,18 +111,14 @@ public sealed class MainViewModel : ObservableObject
 
         try {
             projectManager.OpenProject(dialog.FileName);
-
-            RootNode.Node.RemoveChildren();
-            foreach (TranslationUnit unit in projectManager.Settings.Components) {
-                Node translationNode = projectManager.CreateTranslationNodeHierarchy(unit);
-                RootNode.Add(translationNode);
-            }
         } catch (Exception ex) {
             _ = MessageBox.Show($"Error opening project file: {ex}", MessageBoxType.Error);
             return;
         }
 
+        RootNode = new TreeGridNode(projectManager.Root, projectManager);
         OnNodeUpdate?.Invoke(this, RootNode);
+
         UploadScreenshotCommand.NotifyCanExecuteChanged();
     }
 
@@ -147,7 +142,7 @@ public sealed class MainViewModel : ObservableObject
         CurrentImage = new Bitmap(stream);
         oldImage?.Dispose();
 
-        PoEntry entry = projectManager.GetOrCreateEntry(openedNode);
+        PoEntry entry = projectManager.GetOrAddSegment(openedNode);
         ContextText = entry.Context;
         ImageText = entry.Original;
     }
@@ -158,20 +153,20 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        projectManager.AddOrUpdateEntry(openedNode, ImageText);
+        projectManager.AddOrUpdateSegment(openedNode, ImageText);
     }
 
-    public void OpenUploadScreenshot()
+    private void OpenUploadScreenshot()
     {
-        var upload = new ScreenshotUploadView(projectManager.Settings);
-        upload.Show();
+        using var upload = new ScreenshotUploadView(projectManager.Settings);
+        upload.ShowModal();
     }
 
     private void Quit() => Application.Instance.Quit();
 
     private void OpenAboutDialog()
     {
-        var about = new AboutView();
+        using var about = new AboutView();
         _ = about.ShowDialog(Application.Instance.MainForm);
     }
 }

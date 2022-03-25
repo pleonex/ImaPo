@@ -39,5 +39,5 @@ public class ProjectSettings
 
     public bool GeneratePoTemplates { get; set; }
 
-    public Collection<TranslationUnit> Components { get; set; } = new Collection<TranslationUnit>();
+    public Collection<TranslationUnit> Units { get; set; } = new Collection<TranslationUnit>();
 }

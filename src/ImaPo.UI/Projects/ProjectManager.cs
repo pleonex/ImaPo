@@ -20,6 +20,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using YamlDotNet.Serialization;
 using Yarhl.FileSystem;
@@ -28,13 +29,18 @@ using Yarhl.Media.Text;
 
 namespace ImaPo.UI.Projects;
 
-public class ProjectManager
+public sealed class ProjectManager : IDisposable
 {
+    private const string TodoText = "TODO";
     private readonly Po2Binary po2Binary = new Po2Binary();
 
-    public ProjectSettings Settings { get; private set; }
+    public ProjectSettings? Settings { get; private set; }
 
     public bool OpenedProject { get; private set; }
+
+    public Node? Root { get; private set; }
+
+    public bool Disposed { get; private set; }
 
     public void OpenProject(string projectFile)
     {
@@ -49,93 +55,110 @@ public class ProjectManager
         Settings.ImageFolder = Path.GetFullPath(Settings.ImageFolder, projectRoot);
         Settings.TextFolder = Path.GetFullPath(Settings.TextFolder, projectRoot);
 
+        // Create project tree
+        Root?.Dispose();
+        Root = new Node("root");
+        foreach (TranslationUnit unit in Settings.Units) {
+            Root.Add(CreateUnitTree(unit));
+        }
+
         OpenedProject = true;
     }
 
-    public Node CreateTranslationNodeHierarchy(TranslationUnit unit)
+    public bool HasSegmentForImage(Node imageNode)
     {
-        var translationNode = ReadOrCreateTranslationNode(unit);
-
-        var imageDirInfo = new DirectoryInfoWrapper(new DirectoryInfo(Settings.ImageFolder));
-        var foundFiles = unit.ImageGlobPattern.Execute(imageDirInfo)
-            .Files
-            .Select(f => f.Path);
-
-        foreach (string foundFile in foundFiles) {
-            string fullImagePath = Path.Combine(imageDirInfo.FullName, foundFile);
-            string relativeImageDir = Path.GetDirectoryName(foundFile);
-
-            var imageNode = NodeFactory.FromFile(fullImagePath, FileOpenMode.Read);
-            NodeFactory.CreateContainersForChild(translationNode, relativeImageDir, imageNode);
-        }
-
-        return translationNode;
+        PoEntry? entry = FindSegmentForImage(imageNode);
+        return entry is not null && entry.Original != TodoText;
     }
 
-    public bool HasComponentTextForImage(Node imageNode)
+    public PoEntry GetOrAddSegment(Node imageNode)
     {
-        PoEntry? entry = GetTranslationEntryForImage(imageNode);
-        return entry is not null && entry.Original != "TODO";
-    }
-
-    public PoEntry GetOrCreateEntry(Node imageNode)
-    {
-        Node poNode = FindComponentForImage(imageNode);
+        Node poNode = FindUnitForImage(imageNode);
         Po po = poNode.GetFormatAs<Po>();
 
-        PoEntry? entry = FindTranslationEntryForImage(poNode, imageNode);
+        PoEntry? entry = FindSegmentForImage(poNode, imageNode);
         if (entry is null) {
-            entry = new PoEntry("TODO") { Context = $"image={GetRelativePath(poNode, imageNode)}" };
+            entry = new PoEntry(TodoText) { Context = $"image={GetImageRelativePath(poNode, imageNode)}" };
             po.Add(entry);
-            SaveComponent(poNode);
+            SaveUnit(poNode);
         }
 
         return entry;
     }
 
-    public void AddOrUpdateEntry(Node imageNode, string text)
+    public void AddOrUpdateSegment(Node imageNode, string text)
     {
-        PoEntry entry = GetOrCreateEntry(imageNode);
+        PoEntry entry = GetOrAddSegment(imageNode);
         if (string.IsNullOrEmpty(text)) {
             // TODO: remove from PO
-            entry.Original = "TODO";
+            entry.Original = TodoText;
         } else {
             entry.Original = text;
         }
 
-        Node poNode = FindComponentForImage(imageNode);
-        SaveComponent(poNode);
+        Node poNode = FindUnitForImage(imageNode);
+        SaveUnit(poNode);
     }
 
-    private Node ReadOrCreateTranslationNode(TranslationUnit unit)
+    public void Dispose()
+    {
+        if (Disposed) {
+            return;
+        }
+
+        Root?.Dispose();
+        GC.SuppressFinalize(this);
+        Disposed = true;
+    }
+
+    private Node CreateUnitTree(TranslationUnit unit)
+    {
+        var unitNode = ReadOrCreateUnitNode(unit);
+
+        var imageDirInfo = new DirectoryInfoWrapper(new DirectoryInfo(Settings.ImageFolder));
+        var matcher = new Matcher().AddInclude(unit.ImagesGlobPattern);
+        var matchedFiles = matcher.Execute(imageDirInfo).Files.Select(f => f.Path);
+
+        foreach (string filePath in matchedFiles) {
+            string fullImagePath = Path.Combine(imageDirInfo.FullName, filePath);
+            string relativeImageDir = Path.GetDirectoryName(filePath);
+
+            var imageNode = NodeFactory.FromFile(fullImagePath, FileOpenMode.Read);
+            NodeFactory.CreateContainersForChild(unitNode, relativeImageDir, imageNode);
+        }
+
+        return unitNode;
+    }
+
+    private Node ReadOrCreateUnitNode(TranslationUnit unit)
     {
         string extension = Settings.GeneratePoTemplates ? ".pot" : ".po";
-        string poPath = Path.Combine(Settings.TextFolder, unit.PoName + extension);
+        string poPath = Path.Combine(Settings.TextFolder, unit.Name + extension);
 
         if (!File.Exists(poPath)) {
             Po po = new Po(new PoHeader(Settings.Name, Settings.ContactAddress, Settings.Language));
-            return new Node(unit.PoName + extension, po);
+            return new Node(unit.Name + extension, po);
         }
 
         return NodeFactory.FromFile(poPath, FileOpenMode.Read)
             .TransformWith<Binary2Po>();
     }
 
-    private PoEntry? GetTranslationEntryForImage(Node imageNode) =>
-        FindTranslationEntryForImage(FindComponentForImage(imageNode), imageNode);
+    private PoEntry? FindSegmentForImage(Node imageNode) =>
+        FindSegmentForImage(FindUnitForImage(imageNode), imageNode);
 
-    private PoEntry? FindTranslationEntryForImage(Node translationNode, Node imageNode) =>
-        translationNode.GetFormatAs<Po>()
+    private PoEntry? FindSegmentForImage(Node unitNode, Node imageNode) =>
+        unitNode.GetFormatAs<Po>()
             .Entries
-            .FirstOrDefault(e => e.Context == $"image={GetRelativePath(translationNode, imageNode)}");
+            .FirstOrDefault(e => e.Context == $"image={GetImageRelativePath(unitNode, imageNode)}");
 
-    private string GetRelativePath(Node translationNode, Node imageNode)
+    private string GetImageRelativePath(Node unitNode, Node imageNode)
     {
         // Assuming PO contains image
-        return imageNode.Path[(translationNode.Path.Length + NodeSystem.PathSeparator.Length) ..];
+        return imageNode.Path[(unitNode.Path.Length + NodeSystem.PathSeparator.Length) ..];
     }
 
-    private Node FindComponentForImage(Node imageNode)
+    private Node FindUnitForImage(Node imageNode)
     {
         Node current = imageNode;
         while (current.Parent is not null) {
@@ -149,10 +172,10 @@ public class ProjectManager
         throw new InvalidOperationException($"Cannot find PO for image: {imageNode.Path}");
     }
 
-    private void SaveComponent(Node translationNode)
+    private void SaveUnit(Node unitNode)
     {
-        string poPath = Path.Combine(Settings.TextFolder, translationNode.Name);
-        using BinaryFormat binary = po2Binary.Convert(translationNode.GetFormatAs<Po>());
+        string poPath = Path.Combine(Settings.TextFolder, unitNode.Name);
+        using BinaryFormat binary = po2Binary.Convert(unitNode.GetFormatAs<Po>());
         using var fileStream = new FileStream(poPath, FileMode.Create);
         binary.Stream.WriteTo(fileStream);
     }

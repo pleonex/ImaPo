@@ -60,14 +60,7 @@ public class TreeGridNode : TreeGridItem
         };
 
     private string TranslationStatusIcon =>
-        projectManager.HasComponentTextForImage(Node) ? "\uf00c" : "\uf00d"; // tick or cross
-
-    public void Add(Node node)
-    {
-        var child = new TreeGridNode(node, projectManager);
-        Children.Add(child);
-        Node.Add(node);
-    }
+        projectManager.HasSegmentForImage(Node) ? "\uf00c" : "\uf00d"; // tick or cross
 
     private static TreeGridNodeKind GetKind(Node node)
     {

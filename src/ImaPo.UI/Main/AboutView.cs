@@ -34,6 +34,6 @@ public sealed class AboutView : AboutDialog
         Developers = new[] { "Benito Palacios Sánchez" };
         License = "MIT License\nhttps://opensource.org/licenses/MIT";
         ProgramName = "ImaPo";
-        ProgramDescription = "Tool to help to translate images via Po files in Weblate.";
+        ProgramDescription = "Tool to help to translate images via PO files in Weblate";
     }
 }

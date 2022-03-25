@@ -25,7 +25,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using ImaPo.UI.Projects;
 using ImaPo.UI.ScreenshotUpload.Weblate;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
@@ -37,6 +36,7 @@ public class ScreenshotUploadViewModel : ObservableObject
 {
     private readonly HttpClient client;
     private readonly ProjectSettings project;
+    private string token;
 
     public ScreenshotUploadViewModel(ProjectSettings project)
     {
@@ -47,12 +47,21 @@ public class ScreenshotUploadViewModel : ObservableObject
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         client.DefaultRequestHeaders.Add("User-Agent", "ImaPo");
 
-        UploadCommand = new AsyncRelayCommand(UploadAsync);
+        UploadCommand = new AsyncRelayCommand(UploadAsync, () => !string.IsNullOrWhiteSpace(WeblateToken));
     }
 
-    public ICommand UploadCommand { get; }
+    public event EventHandler<string> StatusUpdated;
 
-    public string WeblateToken { get; set; }
+    public AsyncRelayCommand UploadCommand { get; }
+
+    public string WeblateToken {
+        get => token;
+        set {
+            if (SetProperty(ref token, value)) {
+                UploadCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
 
     public async Task UploadAsync()
     {
@@ -69,16 +78,16 @@ public class ScreenshotUploadViewModel : ObservableObject
                 }
             }
         } catch (Exception ex) {
-            Console.WriteLine(ex);
+            StatusUpdated?.Invoke(this, ex.ToString());
         }
     }
 
     private IEnumerable<string> GetWeblateComponentsSlugs() =>
-        project.Components.Select(e => e.WeblateComponentSlug);
+        project.Units.Select(e => e.WeblateComponentSlug);
 
     private async IAsyncEnumerable<Unit> GetUnitsAsync(string component)
     {
-        Console.WriteLine($"Querying component: {component}");
+        StatusUpdated?.Invoke(this, $"Querying component: {component}");
         var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var baseUri = new Uri(project.WeblateUrl);
@@ -86,7 +95,7 @@ public class ScreenshotUploadViewModel : ObservableObject
 
         bool moreRequests;
         do {
-            Console.WriteLine($"Request to: {requestUri}");
+            StatusUpdated?.Invoke(this, $"Request to: {requestUri}");
             Stream result = await client.GetStreamAsync(requestUri).ConfigureAwait(false);
             UnitQueryResponse response = await JsonSerializer.DeserializeAsync<UnitQueryResponse>(result, jsonOptions)
                 .ConfigureAwait(false);
@@ -108,7 +117,7 @@ public class ScreenshotUploadViewModel : ObservableObject
     private async Task<string> UploadScreenshot(string relativePath, string component)
     {
         string file = Path.Combine(project.ImageFolder, relativePath);
-        Console.WriteLine($"Uploading screenshot: {file}");
+        StatusUpdated?.Invoke(this, $"Uploading screenshot: {file}");
         using var formData = new MultipartFormDataContent();
 
         // form: image -> data stream + file name with extension
@@ -148,7 +157,7 @@ public class ScreenshotUploadViewModel : ObservableObject
 
     private async Task AssignUnitToScreenshot(string screenshotId, int unitId)
     {
-        Console.WriteLine($"Assigning ID: {unitId} to {screenshotId}");
+        StatusUpdated?.Invoke(this, $"Assigning ID: {unitId} to {screenshotId}");
         using var formData = new MultipartFormDataContent();
 
         using var unitContent = new StringContent(unitId.ToString());
