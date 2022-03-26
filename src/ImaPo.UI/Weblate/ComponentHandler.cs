@@ -17,13 +17,19 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-namespace ImaPo.UI.ScreenshotUpload.Weblate;
+using System.Collections.Generic;
+using System.Net.Http;
+using ImaPo.UI.Weblate.Models;
 
-public class ScreenshotCreateResult
+namespace ImaPo.UI.Weblate;
+
+public class ComponentHandler : WeblateBaseHandler
 {
-    public string Name { get; set; }
+    internal ComponentHandler(HttpClient client)
+        : base(client)
+    {
+    }
 
-    public string Translation { get; set; }
-
-    public string Url { get; set; }
+    public IAsyncEnumerable<ScreenshotInfo> GetScreenshotsAsync(string project, string component) =>
+        FetchListAsync<ScreenshotInfo>($"api/components/{project}/{component}/screenshots/");
 }

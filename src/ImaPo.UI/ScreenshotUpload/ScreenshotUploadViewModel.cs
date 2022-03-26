@@ -22,11 +22,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ImaPo.UI.Projects;
-using ImaPo.UI.ScreenshotUpload.Weblate;
+using ImaPo.UI.Weblate;
+using ImaPo.UI.Weblate.Models;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 
@@ -34,18 +34,14 @@ namespace ImaPo.UI.ScreenshotUpload;
 
 public class ScreenshotUploadViewModel : ObservableObject
 {
-    private readonly HttpClient client;
     private readonly ProjectSettings project;
+    private readonly WeblateClient client;
     private string token;
 
     public ScreenshotUploadViewModel(ProjectSettings project)
     {
         this.project = project;
-
-        client = new HttpClient();
-        client.DefaultRequestHeaders.Accept.Clear();
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        client.DefaultRequestHeaders.Add("User-Agent", "ImaPo");
+        client = new WeblateClient(new Uri(project.WeblateUrl));
 
         UploadCommand = new AsyncRelayCommand(UploadAsync, () => !string.IsNullOrWhiteSpace(WeblateToken));
     }
@@ -65,107 +61,51 @@ public class ScreenshotUploadViewModel : ObservableObject
 
     public async Task UploadAsync()
     {
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", WeblateToken);
+        client.SetToken(WeblateToken);
 
         try {
-            foreach (string component in GetWeblateComponentsSlugs()) {
-                await foreach (Unit unit in GetUnitsAsync(component).ConfigureAwait(false)) {
+            var components = project.Units.Select(e => e.WeblateComponentSlug);
+            foreach (string component in components) {
+                OnNewStatus($"Querying existing screenshots for '{component}'");
+                var availableScreenshots = await client.Components.GetScreenshotsAsync(project.WeblateProjectSlug, component)
+                    .ToListAsync().ConfigureAwait(false);
+                OnNewStatus($"Found '{availableScreenshots.Count} screenshots in this component");
+
+                OnNewStatus("Querying units for the component");
+                var units = client.Units.GetUnitsAsync(project.WeblateProjectSlug, component, project.Language);
+                await foreach (Unit unit in units.ConfigureAwait(false)) {
                     string imagePath = unit.Context["image=".Length..];
+                    string filename = imagePath.Replace("/", "_");
+                    string file = Path.Combine(project.ImageFolder, imagePath);
 
-                    string screenshotId = await UploadScreenshot(imagePath, component).ConfigureAwait(false);
+                    ScreenshotInfo? screenshotInfo = availableScreenshots.FirstOrDefault(s => s.Name == filename);
+                    if (screenshotInfo is null) {
+                        OnNewStatus($"Uploading screenshot: '{filename}' from '{file}' for '{unit.Id}'");
+                        screenshotInfo = await client.Screenshots.UploadScreenshotAsync(
+                            file,
+                            filename,
+                            project.WeblateProjectSlug,
+                            component,
+                            project.Language).ConfigureAwait(false);
+                    } else {
+                        OnNewStatus($"Screenshot already exists for unit '{unit.Id}'");
+                    }
 
-                    await AssignUnitToScreenshot(screenshotId, unit.Id).ConfigureAwait(false);
+                    if (screenshotInfo.Units.Any(u => u == unit.SourceUnit)) {
+                        OnNewStatus("Screenshot already linked to unit");
+                    } else {
+                        OnNewStatus($"Assigning unit: '{unit.Id}' to screenshot '{screenshotInfo.ScreenshotId}'");
+                        await client.Screenshots.AssignUnitToScreenshotAsync(screenshotInfo.ScreenshotId, unit.Id).ConfigureAwait(false);
+                    }
                 }
             }
         } catch (Exception ex) {
-            StatusUpdated?.Invoke(this, ex.ToString());
+            OnNewStatus(ex.ToString());
         }
     }
 
-    private IEnumerable<string> GetWeblateComponentsSlugs() =>
-        project.Units.Select(e => e.WeblateComponentSlug);
-
-    private async IAsyncEnumerable<Unit> GetUnitsAsync(string component)
+    private void OnNewStatus(string status)
     {
-        StatusUpdated?.Invoke(this, $"Querying component: {component}");
-        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
-        var baseUri = new Uri(project.WeblateUrl);
-        var requestUri = new Uri(baseUri, $"api/translations/{project.WeblateProjectSlug}/{component}/{project.Language}/units/");
-
-        bool moreRequests;
-        do {
-            StatusUpdated?.Invoke(this, $"Request to: {requestUri}");
-            Stream result = await client.GetStreamAsync(requestUri).ConfigureAwait(false);
-            UnitQueryResponse response = await JsonSerializer.DeserializeAsync<UnitQueryResponse>(result, jsonOptions)
-                .ConfigureAwait(false);
-            if (response is null) {
-                yield break;
-            }
-
-            foreach (Unit unit in response.Results) {
-                yield return unit;
-            }
-
-            moreRequests = !string.IsNullOrEmpty(response.Next);
-            if (moreRequests) {
-                requestUri = new Uri(response.Next);
-            }
-        } while (moreRequests);
-    }
-
-    private async Task<string> UploadScreenshot(string relativePath, string component)
-    {
-        string file = Path.Combine(project.ImageFolder, relativePath);
-        StatusUpdated?.Invoke(this, $"Uploading screenshot: {file}");
-        using var formData = new MultipartFormDataContent();
-
-        // form: image -> data stream + file name with extension
-        await using var fileStream = new FileStream(file, FileMode.Open);
-        using var streamContent = new StreamContent(fileStream);
-        formData.Add(streamContent, "image", Path.GetFileName(file));
-
-        // form: name -> file name
-        using var nameContent = new StringContent(relativePath.Replace("/", "_"));
-        formData.Add(nameContent, "name");
-
-        // form: project_slug -> project slug
-        using var projectSlugContent = new StringContent(project.WeblateProjectSlug);
-        formData.Add(projectSlugContent, "project_slug");
-
-        // form: component_slug -> component slug
-        using var componentSlugContent = new StringContent(component);
-        formData.Add(componentSlugContent, "component_slug");
-
-        // form: language_code -> language code
-        using var languageContent = new StringContent(project.Language);
-        formData.Add(languageContent, "language_code");
-
-        var baseUri = new Uri(project.WeblateUrl);
-        var requestUri = new Uri(baseUri, $"api/screenshots/");
-        HttpResponseMessage response = await client.PostAsync(requestUri, formData).ConfigureAwait(false);
-        _ = response.EnsureSuccessStatusCode();
-
-        string responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        ScreenshotCreateResult createResult = JsonSerializer.Deserialize<ScreenshotCreateResult>(responseText, jsonOptions);
-
-        // URL is the same as request appended the new ID
-        string url = createResult?.Url ?? throw new FormatException();
-        return url.Replace(requestUri.AbsoluteUri, string.Empty)[..^1];
-    }
-
-    private async Task AssignUnitToScreenshot(string screenshotId, int unitId)
-    {
-        StatusUpdated?.Invoke(this, $"Assigning ID: {unitId} to {screenshotId}");
-        using var formData = new MultipartFormDataContent();
-
-        using var unitContent = new StringContent(unitId.ToString());
-        formData.Add(unitContent, "unit_id");
-
-        var baseUri = new Uri(project.WeblateUrl);
-        var requestUri = new Uri(baseUri, $"/api/screenshots/{screenshotId}/units/");
-        HttpResponseMessage response = await client.PostAsync(requestUri, formData).ConfigureAwait(false);
-        _ = response.EnsureSuccessStatusCode();
+        Eto.Forms.Application.Instance.Invoke(() => StatusUpdated?.Invoke(this, status));
     }
 }

@@ -54,7 +54,7 @@ public class ScreenshotUploadView : Dialog
         var outputText = new TextArea {
             ReadOnly = true,
         };
-        viewModel.StatusUpdated += (_, e) => outputText.Text += $"{e}\n";
+        viewModel.StatusUpdated += (_, e) => outputText.Text += e + "\n";
 
         var progressBar = new ProgressBar {
             Indeterminate = true,

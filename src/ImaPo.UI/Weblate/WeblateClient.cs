@@ -17,11 +17,37 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-namespace ImaPo.UI.ScreenshotUpload.Weblate;
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
-public class Unit
+namespace ImaPo.UI.Weblate;
+
+public class WeblateClient
 {
-    public string Context { get; set; }
+    private readonly HttpClient client;
 
-    public int Id { get; set; }
+    public WeblateClient(Uri weblateUri)
+    {
+        client = new HttpClient();
+        client.BaseAddress = weblateUri;
+        client.DefaultRequestHeaders.Accept.Clear();
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.DefaultRequestHeaders.Add("User-Agent", "ImaPo");
+
+        Components = new ComponentHandler(client);
+        Units = new UnitHandler(client);
+        Screenshots = new ScreenshotHandler(client);
+    }
+
+    public ComponentHandler Components { get; }
+
+    public UnitHandler Units { get; }
+
+    public ScreenshotHandler Screenshots { get; }
+
+    public void SetToken(string token)
+    {
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", token);
+    }
 }

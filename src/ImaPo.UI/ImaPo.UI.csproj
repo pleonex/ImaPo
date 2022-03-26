@@ -18,6 +18,8 @@
     <PackageReference Include="Eto.Forms" />
     <PackageReference Include="Microsoft.Toolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="Yoh.Text.Json.NamingPolicies" />
   </ItemGroup>
 
 </Project>

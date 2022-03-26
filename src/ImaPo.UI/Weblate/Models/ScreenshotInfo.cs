@@ -18,16 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 
-namespace ImaPo.UI.ScreenshotUpload.Weblate;
+namespace ImaPo.UI.Weblate.Models;
 
-public class UnitQueryResponse
+public class ScreenshotInfo
 {
-    public int Count { get; set; }
+    public string Name { get; set; }
 
-    public string Next { get; set; }
+    public string Translation { get; set; }
 
-    public string Previous { get; set; }
+    public string FileUrl { get; set; }
 
-    public Collection<Unit> Results { get; set; } = new Collection<Unit>();
+    public Collection<string> Units { get; set; } = new Collection<string>();
+
+    public string Url { get; set; }
+
+    [JsonIgnore]
+    public string ScreenshotId {
+        get {
+            int lastSlash = Url.LastIndexOf('/', Url.Length - 2);
+            return Url[(lastSlash + 1) ..^1];
+        }
+    }
 }
