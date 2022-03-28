@@ -19,6 +19,7 @@
 // SOFTWARE.
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -89,6 +90,13 @@ public sealed class MainWindow : Form
 
         imageTextBox = new TextArea();
         _ = imageTextBox.TextBinding.BindDataContext((MainViewModel vm) => vm.ImageText);
+        imageTextBox.KeyUp += (_, e) => {
+            if (e.Control && e.Key == Keys.Down) {
+                tree.SelectedRow++;
+            } else if (e.Control && e.Key == Keys.Up) {
+                tree.SelectedRow--;
+            }
+        };
 
         var poTable = new TableLayout {
             Padding = new Padding(5),
@@ -138,10 +146,28 @@ public sealed class MainWindow : Form
             });
         tree.DataStore = viewModel.RootNode;
         _ = tree.SelectedItemBinding.BindDataContext((MainViewModel vm) => vm.SelectedNode);
-        tree.SelectedItemChanged += (_, _) => Binding.ExecuteCommand(
-            viewModel,
-            Binding.Property((MainViewModel vm) => vm.OpenImageCommand));
-        tree.SelectedItemChanged += (_, _) => imageTextBox.SelectAll();
+        tree.SelectedRowsChanged += (_, _) => {
+            Binding.ExecuteCommand(
+                viewModel,
+                Binding.Property((MainViewModel vm) => vm.OpenImageCommand));
+
+            // Because after this event, the tree gets focus, we need to delay a bit
+            // the focus on other controls (image text)
+            if (viewModel.SelectedNode?.Node.Children.Count == 0) {
+                imageTextBox.SelectAll();
+                _ = Task.Delay(200).ContinueWith(
+                    _ => Application.Instance.Invoke(() => imageTextBox.Focus()));
+            }
+        };
+        tree.KeyUp += (_, e) => {
+            if (e.Key == Keys.Right) {
+                tree.SelectedItem.Expanded = true;
+                tree.ReloadItem(tree.SelectedItem);
+            } else if (e.Key == Keys.Left) {
+                tree.SelectedItem.Expanded = false;
+                tree.ReloadItem(tree.SelectedItem);
+            }
+        };
 
         // Eto doesn't implement the binding fully: https://github.com/picoe/Eto/issues/240
         viewModel.OnNodeUpdate += (_, node) => {
