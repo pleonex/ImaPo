@@ -139,7 +139,12 @@ public sealed class MainViewModel : ObservableObject
         stream.Position = 0;
 
         Image? oldImage = CurrentImage;
-        CurrentImage = new Bitmap(stream);
+        try {
+            CurrentImage = new Bitmap(stream);
+        } catch {
+            CurrentImage = null;
+        }
+
         oldImage?.Dispose();
 
         PoEntry entry = projectManager.GetOrAddSegment(openedNode);

@@ -14,6 +14,8 @@
 
 In progress...
 
+1. Install [Ubuntu Nerd Font](https://www.nerdfonts.com/font-downloads)
+
 ## Usage
 
 In progress...

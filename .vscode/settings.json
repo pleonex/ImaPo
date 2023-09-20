@@ -17,4 +17,5 @@
         "Globbing",
         "imapo"
     ],
+    "dotnet.defaultSolution": "src/ImaPo.sln",
 }
